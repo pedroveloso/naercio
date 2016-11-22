@@ -1,3 +1,6 @@
+## REFERENCE: http://stanford.edu/~ejdemyr/r-tutorials-archive/tutorial8.html
+
+library(MatchIt)
 library(dplyr)
 library(ggplot2)
 
