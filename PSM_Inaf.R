@@ -19,3 +19,16 @@ dadosT <- dados %>% mutate(Alfab = ifelse(ProfComb <= 95,0,1)) %>%
   mutate(racaT = ifelse(raca == 1, 1, 0)) %>% 
   mutate(EscolPai = ifelse(p12 == 99, 0, p12)) %>% 
   mutate(EscolMae = ifelse(p13 == 99, 0, p13))
+
+
+#Comparacao sem pareamento
+mediasSemParAlfab <- dadosT %>% group_by(Alfab) %>% summarise(n_particp = n(), 
+                                                         mean_c = mean(c_thet), 
+                                                         mean_o = mean(o_thet), 
+                                                         mean_se = mean(se_thet))
+
+mediasSemParProfic <- dadosT %>% group_by(Profic) %>% summarise(n_particp = n(), 
+                                                              mean_c = mean(c_thet), 
+                                                              mean_o = mean(o_thet), 
+                                                              mean_se = mean(se_thet))
+
