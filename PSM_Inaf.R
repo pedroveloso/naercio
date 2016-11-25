@@ -21,18 +21,34 @@ dadosT <- dados %>% mutate(Alfab = ifelse(ProfComb <= 95,0,1)) %>%
   mutate(EscolMae = ifelse(p13 == 99, 0, p13))
 
 
-#Comparacao sem pareamento
+#Comparacao sem pareamento para alfabetizados
+vars_paream <- c('sexo','raca','id_real','EscolPai','EscolMae')
+
 mediasSemParAlfab <- dadosT %>% group_by(Alfab) %>% summarise(n_particp = n(), 
                                                          mean_c = mean(c_thet), 
                                                          mean_o = mean(o_thet), 
                                                          mean_se = mean(se_thet))
 
+tabelaVarsPareamAlfab <- dadosT %>% group_by(Alfab) %>%
+  select(one_of(vars_paream)) %>% 
+  summarise_all(funs(mean(.,na.rm=T)))
+
+listaTestsAlfab <- lapply(vars_paream, function(v){
+  t.test(dadosT[,v] ~ dadosT[,'Alfab'])
+})
+
+#Comparacao sem pareamento para proficientes
 mediasSemParProfic <- dadosT %>% group_by(Profic) %>% summarise(n_particp = n(), 
-                                                              mean_c = mean(c_thet), 
-                                                              mean_o = mean(o_thet), 
-                                                              mean_se = mean(se_thet))
+                                                                mean_c = mean(c_thet), 
+                                                                mean_o = mean(o_thet), 
+                                                                mean_se = mean(se_thet))
 
-vars_paream <- c('sexo','raca','id_real','EscolPai','EscolMae')
+tabelaVarsPareamProfic <- dadosT %>% group_by(Profic) %>%
+  select(one_of(vars_paream)) %>% 
+  summarise_all(funs(mean(.,na.rm=T)))
 
-tabelaVarsPaream 
+listaTestsProfic <- lapply(vars_paream, function(v){
+  t.test(dadosT[,v] ~ dadosT[,'Profic'])
+})
+
 
