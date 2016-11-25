@@ -32,3 +32,7 @@ mediasSemParProfic <- dadosT %>% group_by(Profic) %>% summarise(n_particp = n(),
                                                               mean_o = mean(o_thet), 
                                                               mean_se = mean(se_thet))
 
+vars_paream <- c('sexo','raca','id_real','EscolPai','EscolMae')
+
+tabelaVarsPaream 
+
