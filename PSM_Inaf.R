@@ -64,3 +64,12 @@ summary(proficPSModel)
 
 proficPredicted <- data.frame(predictedScore = predict(proficPSModel, type = "response"),
                              Profic = proficPSModel$model$Profic)
+
+# Avaliacao da regiao de suporte comum para alfabetizados
+rotulos <- paste("Categoria de alfatebitação: ", c("Alfabetizados","Analfabetos funcionais"))
+alfabPredicted %>% mutate(Alfab = ifelse(Alfab == 1, rotulos[1],rotulos[2])) %>%
+  ggplot(aes(x = predictedScore)) +
+  geom_histogram(color = "white") +
+  facet_wrap(~Alfab) +
+  xlab("Probabilidade de ser alfabetizado") +
+  theme_bw()
