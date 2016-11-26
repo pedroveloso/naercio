@@ -51,4 +51,16 @@ listaTestsProfic <- lapply(vars_paream, function(v){
   t.test(dadosT[,v] ~ dadosT[,'Profic'])
 })
 
+# Propensity Score para alfabetizados
+alfabPSModel <- glm(Alfab ~ sexoT + racaT + EscolPai + EscolMae, family = binomial(), data = dadosT)
+summary(alfabPSModel)
 
+alfabPredicted <- data.frame(predictedScore = predict(alfabPSModel, type = "response"),
+                             Alfab = alfabPSModel$model$Alfab)
+
+# Propensity Score para proficientes
+proficPSModel <- glm(Profic ~ sexoT + racaT + EscolPai + EscolMae, family = binomial(), data = dadosT)
+summary(proficPSModel)
+
+proficPredicted <- data.frame(predictedScore = predict(proficPSModel, type = "response"),
+                             Profic = proficPSModel$model$Profic)
