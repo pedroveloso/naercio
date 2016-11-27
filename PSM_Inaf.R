@@ -55,21 +55,33 @@ listaTestsProfic <- lapply(vars_paream, function(v){
 alfabPSModel <- glm(Alfab ~ sexoT + racaT + EscolPai + EscolMae, family = binomial(), data = dadosT)
 summary(alfabPSModel)
 
-alfabPredicted <- data.frame(predictedScore = predict(alfabPSModel, type = "response"),
+alfabPredicted <- data.frame(alfabPScore = predict(alfabPSModel, type = "response"),
                              Alfab = alfabPSModel$model$Alfab)
 
 # Propensity Score para proficientes
 proficPSModel <- glm(Profic ~ sexoT + racaT + EscolPai + EscolMae, family = binomial(), data = dadosT)
 summary(proficPSModel)
 
-proficPredicted <- data.frame(predictedScore = predict(proficPSModel, type = "response"),
+proficPredicted <- data.frame(proficPScore = predict(proficPSModel, type = "response"),
                              Profic = proficPSModel$model$Profic)
 
 # Avaliacao da regiao de suporte comum para alfabetizados
 rotulos <- paste("Categoria de alfatebitação: ", c("Alfabetizados","Analfabetos funcionais"))
 alfabPredicted %>% mutate(Alfab = ifelse(Alfab == 1, rotulos[1],rotulos[2])) %>%
-  ggplot(aes(x = predictedScore)) +
+  ggplot(aes(x = alfabPScore)) +
   geom_histogram(color = "white") +
   facet_wrap(~Alfab) +
   xlab("Probabilidade de ser alfabetizado") +
   theme_bw()
+
+# Avaliacao da regiao de suporte comum para proficientes
+rotulos <- paste("Categoria de alfatebitação: ", c("Proficientes","Não proficientes"))
+proficPredicted %>% mutate(Profic = ifelse(Profic == 1, rotulos[1],rotulos[2])) %>%
+  ggplot(aes(x = proficPScore)) +
+  geom_histogram(color = "white") +
+  facet_wrap(~Profic) +
+  xlab("Probabilidade de ser alfabetizado") +
+  theme_bw()
+
+
+
