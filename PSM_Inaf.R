@@ -97,5 +97,94 @@ proficPredicted %>% mutate(profic = ifelse(profic == 1, rotulos[1],rotulos[2])) 
   theme_bw()
 
 # Matching para alfabetizados
+alfabSemMissing <- dadosT %>% select(ProfComb, alfab, NCS1, NCS2, NCS3, one_of(vars_paream)) %>% na.omit()
 
+mod_match <- matchit(alfab ~ id_real + sexoT + racaT +
+                       paiMedioCompleto + naoTevePai + naoRespPai +
+                       maeMedioCompleto + naoTeveMae + naoRespMae, 
+                     method = "full", discard = 'both', data=alfabSemMissing)
 
+matchedAlfab <- match.data(mod_match)
+
+# Matching para proficientes
+proficSemMissing <- dadosT %>% select(ProfComb, profic, NCS1, NCS2, NCS3, one_of(vars_paream)) %>% na.omit()
+
+mod_match <- matchit(profic ~ id_real + sexoT + racaT +
+                       paiMedioCompleto + naoTevePai + naoRespPai +
+                       maeMedioCompleto + naoTeveMae + naoRespMae, 
+                     method = "full", discard = 'both', data=proficSemMissing)
+
+matchedProfic <- match.data(mod_match)
+
+#Inspecao visual do matching
+fn_bal <- function(matchedAlfab,variable) {
+  matchedAlfab$variable <- matchedAlfab[,variable]
+  matchedAlfab$alfab <- as.factor(matchedAlfab$alfab)
+  support <- c(min(matchedAlfab$variable), max(matchedAlfab$variable))
+  ggplot(matchedAlfab, aes(x = distance, y = variable, color = alfab)) +
+    geom_point(alpha = 0.2, size = 1.3) +
+    geom_smooth(method = 'loess', se = F) +
+    xlab('Propensity Score') +
+    ylab(variable) +
+    theme_bw() +
+    ylim(support)
+}
+
+library(gridExtra)
+
+grid.arrange(
+  fn_bal(matchedAlfab, 'id_real'),
+  fn_bal(matchedAlfab, 'sexoT'),
+  fn_bal(matchedAlfab, 'racaT'),
+  fn_bal(matchedAlfab, 'paiMedioCompleto'),
+  fn_bal(matchedAlfab, 'maeMedioCompleto'),
+  nrow = 3, widths = c(1, 0.8)
+)
+
+fn_bal <- function(matchedProfic,variable) {
+  matchedProfic$variable <- matchedProfic[,variable]
+  matchedProfic$profic <- as.factor(matchedProfic$profic)
+  support <- c(min(matchedProfic$variable), max(matchedProfic$variable))
+  ggplot(matchedProfic, aes(x = distance, y = variable, color = profic)) +
+    geom_point(alpha = 0.2, size = 1.3) +
+    geom_smooth(method = 'loess', se = F) +
+    xlab('Propensity Score') +
+    ylab(variable) +
+    theme_bw() +
+    ylim(support)
+}
+
+grid.arrange(
+  fn_bal(matchedProfic, 'id_real'),
+  fn_bal(matchedProfic, 'sexoT'),
+  fn_bal(matchedProfic, 'racaT'),
+  fn_bal(matchedProfic, 'paiMedioCompleto'),
+  fn_bal(matchedProfic, 'maeMedioCompleto'),
+  nrow = 3, widths = c(1, 0.8)
+)
+
+# Testes de media pos-pareamento
+
+mediaPosParAlfab <- matchedAlfab %>% group_by(alfab) %>% 
+  select(one_of(vars_paream)) %>% 
+  summarise_all(funs(mean))
+
+mediaPosParProfic <- matchedProfic %>% group_by(profic) %>% 
+  select(one_of(vars_paream)) %>% 
+  summarise_all(funs(mean))
+
+testeParAlfab <- lapply(vars_paream,function(v){
+  t.test(matchedAlfab[,v] ~ matchedAlfab$alfab)
+})
+
+testeParProfic <- lapply(vars_paream,function(v){
+  t.test(matchedProfic[,v] ~ matchedProfic$profic)
+})
+
+#Estimando os efeitos para os alfabetizados
+
+lmAlfab <- lm(ProfComb ~ NCS1 + NCS2 + NCS3 + NCS1*NCS2 + NCS1*NCS3 +
+                NCS2*NCS3, data = matchedAlfab)
+
+lmProfic <- lm(ProfComb ~ NCS1 + NCS2 + NCS3 + NCS1*NCS2 + NCS1*NCS3 +
+                NCS2*NCS3, data = matchedProfic)
