@@ -11,9 +11,9 @@ dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1,p3,c(p12:p13),c(Pr
 
 dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
   mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
-  mutate(NCS1 = ifelse(c_thet > median(c_thet), 1, 0)) %>%
-  mutate(NCS2 = ifelse(o_thet > median(o_thet), 1, 0)) %>% 
-  mutate(NCS3 = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
+  mutate(Autogestao = ifelse(c_thet > median(c_thet), 1, 0)) %>%
+  mutate(Openness = ifelse(o_thet > median(o_thet), 1, 0)) %>% 
+  mutate(Autoconceito = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
   mutate(sexoT = ifelse(sexo == 1, 1, 0)) %>% 
   mutate(racaT = ifelse(raca == 1, 1, 0)) %>%
   mutate(paiMedioCompleto = ifelse(p12 <= 5, 0, ifelse(p12 != 9 | p12 != 99, 1, 0))) %>% 
@@ -29,7 +29,7 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
 #Comparacao sem pareamento para alfabetizados
 
 vars_paream <- c('id_real','sexoT', 'racaT','paiMedioCompleto','naoTevePai',
-                 'naoRespPai','maeMedioCompleto','naoTeveMae','naoRespMae', 'ensinoMedioCompleto')
+                 'maeMedioCompleto','naoTeveMae', 'ensinoMedioCompleto')
 
 mediasSemParalfab <- dadosT %>% group_by(alfab) %>% summarise(n_particp = n(), 
                                                          mean_c = mean(c_thet), 
@@ -65,8 +65,8 @@ listaTestsProfic <- lapply(vars_paream, function(v){
 # Propensity Score para alfabetizados
 
 alfabPSModel <- glm(alfab ~ id_real + sexoT + racaT +
-                    paiMedioCompleto + naoTevePai + naoRespPai +
-                    maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto,
+                      paiMedioCompleto + naoTevePai + maeMedioCompleto + 
+                      naoTeveMae + ensinoMedioCompleto,
                     family = binomial(), data = dadosT)
 summary(alfabPSModel)
 
@@ -75,8 +75,8 @@ alfabPredicted <- data.frame(alfabPScore = predict(alfabPSModel, type = "respons
 
 # Propensity Score para proficientes
 proficPSModel <- glm(profic ~ id_real + sexoT + racaT +
-                       paiMedioCompleto + naoTevePai + naoRespPai +
-                       maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto, 
+                       paiMedioCompleto + naoTevePai + maeMedioCompleto + 
+                       naoTeveMae + ensinoMedioCompleto, 
                        family = binomial(), data = dadosT)
 summary(proficPSModel)
 
@@ -102,21 +102,21 @@ proficPredicted %>% mutate(profic = ifelse(profic == 1, rotulos[1],rotulos[2])) 
   theme_bw()
 
 # Matching para alfabetizados
-alfabSemMissing <- dadosT %>% select(ProfComb, alfab, NCS1, NCS2, NCS3, one_of(vars_paream)) %>% na.omit()
+alfabSemMissing <- dadosT %>% select(ProfComb, alfab, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% na.omit()
 
 modMatchAlfab <- matchit(alfab ~ id_real + sexoT + racaT +
-                       paiMedioCompleto + naoTevePai + naoRespPai +
-                       maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto,
+                       paiMedioCompleto + naoTevePai + maeMedioCompleto + 
+                       naoTeveMae + ensinoMedioCompleto,
                        method = "nearest", discard = 'both', data=alfabSemMissing)
 
 matchedAlfab <- match.data(modMatchAlfab)
 
 # Matching para proficientes
-proficSemMissing <- dadosT %>% select(ProfComb, profic, NCS1, NCS2, NCS3, one_of(vars_paream)) %>% na.omit()
+proficSemMissing <- dadosT %>% select(ProfComb, profic, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% na.omit()
 
-modMatchProfic <- matchit(profic ~ id_real + sexoT + racaT +
-                       paiMedioCompleto + naoTevePai + naoRespPai +
-                       maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto,
+modMatchProfic <- matchit(profic ~ id_real + sexoT + racaT + 
+                            paiMedioCompleto + naoTevePai + maeMedioCompleto + 
+                            naoTeveMae + ensinoMedioCompleto,
                        method = "nearest", discard = 'both', data = proficSemMissing)
 
 matchedProfic <- match.data(modMatchProfic)
@@ -190,6 +190,6 @@ testeParProfic <- lapply(vars_paream,function(v){
 
 #Estimando os efeitos para os alfabetizados
 
-lmAlfab <- lm(ProfComb ~ NCS1 + NCS2 + NCS3, data = matchedAlfab)
+lmAlfab <- lm(ProfComb ~ Autogestao + Openness + Autoconceito, data = matchedAlfab)
 
-lmProfic <- lm(ProfComb ~ NCS1 + NCS2 + NCS3, data = matchedProfic)
+lmProfic <- lm(ProfComb ~ Autogestao + Openness + Autoconceito, data = matchedProfic)
