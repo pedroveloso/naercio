@@ -5,28 +5,31 @@ library(plyr)
 library(dplyr)
 library(ggplot2)
 
-dados <- read.csv(file.choose(),sep=";",na.strings = ".")
+dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
-dados <- dados %>% select(.,c(quest,sexo,raca,id_real,c(p12:p13),c(ProfComb:se4_n)))
+dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1,p3,c(p12:p13),c(ProfComb:se4_n)))
 
-dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95,0,1)) %>% 
-  mutate(profic = ifelse(ProfComb > 137,1,0)) %>% 
-  mutate(NCS1 = ifelse(c_thet > median(c_thet),1,0)) %>%
-  mutate(NCS2 = ifelse(o_thet > median(o_thet),1,0)) %>% 
-  mutate(NCS3 = ifelse(se_thet > median(se_thet),1,0)) %>% 
+dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
+  mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
+  mutate(NCS1 = ifelse(c_thet > median(c_thet), 1, 0)) %>%
+  mutate(NCS2 = ifelse(o_thet > median(o_thet), 1, 0)) %>% 
+  mutate(NCS3 = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
   mutate(sexoT = ifelse(sexo == 1, 1, 0)) %>% 
   mutate(racaT = ifelse(raca == 1, 1, 0)) %>%
-  mutate(paiMedioCompleto = ifelse(p12 <= 5, 0, ifelse(p12 != 9 | p12 != 99,1,0))) %>% 
+  mutate(paiMedioCompleto = ifelse(p12 <= 5, 0, ifelse(p12 != 9 | p12 != 99, 1, 0))) %>% 
   mutate(naoTevePai = ifelse(p12 == 9, 1, 0)) %>%
   mutate(naoRespPai = ifelse(p12 == 99, 1, 0)) %>% 
-  mutate(maeMedioCompleto = ifelse(p13 <= 5, 0, ifelse(p13 != 9 | p13 != 99,1,0))) %>% 
+  mutate(maeMedioCompleto = ifelse(p13 <= 5, 0, ifelse(p13 != 9 | p13 != 99, 1, 0))) %>% 
   mutate(naoTeveMae = ifelse(p13 == 9, 1, 0)) %>%
-  mutate(naoRespMae = ifelse(p13 == 99, 1, 0))
+  mutate(naoRespMae = ifelse(p13 == 99, 1, 0)) %>%
+  mutate(centroSul = ifelse(EST >= 31, 1, 0)) %>% 
+  mutate(ensinoMedioCompleto = ifelse(p1 >= 1 & p1 <= 12, 0, 1 )) %>% 
+  mutate(aindaEstuda = ifelse(p3 == 1, 1, 0))
 
 #Comparacao sem pareamento para alfabetizados
 
 vars_paream <- c('id_real','sexoT', 'racaT','paiMedioCompleto','naoTevePai',
-                 'naoRespPai','maeMedioCompleto','naoTeveMae','naoRespMae')
+                 'naoRespPai','maeMedioCompleto','naoTeveMae','naoRespMae', 'ensinoMedioCompleto')
 
 mediasSemParalfab <- dadosT %>% group_by(alfab) %>% summarise(n_particp = n(), 
                                                          mean_c = mean(c_thet), 
@@ -63,7 +66,8 @@ listaTestsProfic <- lapply(vars_paream, function(v){
 
 alfabPSModel <- glm(alfab ~ id_real + sexoT + racaT +
                     paiMedioCompleto + naoTevePai + naoRespPai +
-                    maeMedioCompleto + naoTeveMae + naoRespMae, family = binomial(), data = dadosT)
+                    maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto,
+                    family = binomial(), data = dadosT)
 summary(alfabPSModel)
 
 alfabPredicted <- data.frame(alfabPScore = predict(alfabPSModel, type = "response"),
@@ -71,8 +75,9 @@ alfabPredicted <- data.frame(alfabPScore = predict(alfabPSModel, type = "respons
 
 # Propensity Score para proficientes
 proficPSModel <- glm(profic ~ id_real + sexoT + racaT +
-                           paiMedioCompleto + naoTevePai + naoRespPai +
-                           maeMedioCompleto + naoTeveMae + naoRespMae, family = binomial(), data = dadosT)
+                       paiMedioCompleto + naoTevePai + naoRespPai +
+                       maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto, 
+                       family = binomial(), data = dadosT)
 summary(proficPSModel)
 
 proficPredicted <- data.frame(proficPScore = predict(proficPSModel, type = "response"),
@@ -99,22 +104,22 @@ proficPredicted %>% mutate(profic = ifelse(profic == 1, rotulos[1],rotulos[2])) 
 # Matching para alfabetizados
 alfabSemMissing <- dadosT %>% select(ProfComb, alfab, NCS1, NCS2, NCS3, one_of(vars_paream)) %>% na.omit()
 
-mod_match <- matchit(alfab ~ id_real + sexoT + racaT +
+modMatchAlfab <- matchit(alfab ~ id_real + sexoT + racaT +
                        paiMedioCompleto + naoTevePai + naoRespPai +
-                       maeMedioCompleto + naoTeveMae + naoRespMae, 
-                     method = "full", discard = 'both', data=alfabSemMissing)
+                       maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto,
+                       method = "nearest", discard = 'both', data=alfabSemMissing)
 
-matchedAlfab <- match.data(mod_match)
+matchedAlfab <- match.data(modMatchAlfab)
 
 # Matching para proficientes
 proficSemMissing <- dadosT %>% select(ProfComb, profic, NCS1, NCS2, NCS3, one_of(vars_paream)) %>% na.omit()
 
-mod_match <- matchit(profic ~ id_real + sexoT + racaT +
+modMatchProfic <- matchit(profic ~ id_real + sexoT + racaT +
                        paiMedioCompleto + naoTevePai + naoRespPai +
-                       maeMedioCompleto + naoTeveMae + naoRespMae, 
-                     method = "full", discard = 'both', data=proficSemMissing)
+                       maeMedioCompleto + naoTeveMae + naoRespMae + ensinoMedioCompleto,
+                       method = "nearest", discard = 'both', data = proficSemMissing)
 
-matchedProfic <- match.data(mod_match)
+matchedProfic <- match.data(modMatchProfic)
 
 #Inspecao visual do matching
 fn_bal <- function(matchedAlfab,variable) {
@@ -138,6 +143,7 @@ grid.arrange(
   fn_bal(matchedAlfab, 'racaT'),
   fn_bal(matchedAlfab, 'paiMedioCompleto'),
   fn_bal(matchedAlfab, 'maeMedioCompleto'),
+  fn_bal(matchedAlfab, 'ensinoMedioCompleto'),
   nrow = 3, widths = c(1, 0.8)
 )
 
@@ -160,6 +166,7 @@ grid.arrange(
   fn_bal(matchedProfic, 'racaT'),
   fn_bal(matchedProfic, 'paiMedioCompleto'),
   fn_bal(matchedProfic, 'maeMedioCompleto'),
+  fn_bal(matchedProfic, 'ensinoMedioCompleto'),
   nrow = 3, widths = c(1, 0.8)
 )
 
@@ -183,8 +190,6 @@ testeParProfic <- lapply(vars_paream,function(v){
 
 #Estimando os efeitos para os alfabetizados
 
-lmAlfab <- lm(ProfComb ~ NCS1 + NCS2 + NCS3 + NCS1*NCS2 + NCS1*NCS3 +
-                NCS2*NCS3, data = matchedAlfab)
+lmAlfab <- lm(ProfComb ~ NCS1 + NCS2 + NCS3, data = matchedAlfab)
 
-lmProfic <- lm(ProfComb ~ NCS1 + NCS2 + NCS3 + NCS1*NCS2 + NCS1*NCS3 +
-                NCS2*NCS3, data = matchedProfic)
+lmProfic <- lm(ProfComb ~ NCS1 + NCS2 + NCS3, data = matchedProfic)
