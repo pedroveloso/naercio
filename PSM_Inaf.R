@@ -9,8 +9,8 @@ dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
 dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1,p3,c(p12:p13),c(ProfComb:se4_n)))
 
-dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
-  mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
+dadosT <- dados %>% mutate(Autogestao = ifelse(ProfComb <= 95, 0, 1)) %>% 
+  mutate(Openness = ifelse(ProfComb > 137, 1, 0)) %>% 
   mutate(Autogestao = ifelse(c_thet > median(c_thet), 1, 0)) %>%
   mutate(Openness = ifelse(o_thet > median(o_thet), 1, 0)) %>% 
   mutate(Autoconceito = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
@@ -23,110 +23,132 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
   mutate(naoTeveMae = ifelse(p13 == 9, 1, 0)) %>%
   mutate(naoRespMae = ifelse(p13 == 99, 1, 0)) %>%
   mutate(centroSul = ifelse(EST >= 31, 1, 0)) %>% 
-  mutate(ensinoMedioCompleto = ifelse(p1 >= 1 & p1 <= 12, 0, 1 )) %>% 
+  mutate(ensinoFundCompleto = ifelse(p1 >= 1 & p1 <= 8, 0, 1)) %>% 
+  mutate(ensinoMedioCompleto = ifelse(p1 >= 1 & p1 <= 11, 0, 1 )) %>% 
   mutate(aindaEstuda = ifelse(p3 == 1, 1, 0))
 
-#Comparacao sem pareamento para alfabetizados
+#Comparacao sem pareamento para HSEs
 
-vars_paream <- c('id_real','sexoT', 'racaT','paiMedioCompleto','naoTevePai',
-                 'maeMedioCompleto','naoTeveMae', 'ensinoMedioCompleto')
+vars_paream <- c('id_real','sexoT', 'racaT', 'maeMedioCompleto', 'ensinoMedioCompleto')
 
-mediasSemParalfab <- dadosT %>% group_by(alfab) %>% summarise(n_particp = n(), 
-                                                         mean_c = mean(c_thet), 
-                                                         mean_o = mean(o_thet), 
-                                                         mean_se = mean(se_thet))
 
-tabelaVarsPareamAlfab <- dadosT %>% group_by(alfab) %>%
+tabelaVarsPareamAutogestao <- dadosT %>% group_by(Autogestao) %>%
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean(.,na.rm=T)))
 
-#Comparacao sem pareamento para proficientes
-
-mediasSemParProfic <- dadosT %>% group_by(profic) %>% summarise(n_particp = n(), 
-                                                                mean_c = mean(c_thet), 
-                                                                mean_o = mean(o_thet), 
-                                                                mean_se = mean(se_thet))
-
-tabelaVarsPareamProfic <- dadosT %>% group_by(profic) %>%
+tabelaVarsPareamOpenness <- dadosT %>% group_by(Openness) %>%
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean(.,na.rm=T)))
 
+tabelaVarsPareamOpenness <- dadosT %>% group_by(Autoconceito) %>%
+  select(one_of(vars_paream)) %>% 
+  summarise_all(funs(mean(.,na.rm=T)))
 
-#Criando funcao para teste de medias e testando para alfabetizados e proficientes
+#Criando funcao para teste de medias e testando para as HSEs
 
-listaTestsAlfab <- lapply(vars_paream, function(v){
-  t.test(dadosT[,v] ~ dadosT[,'alfab'])
+listaTestsAutogestao <- lapply(vars_paream, function(v){
+  t.test(dadosT[,v] ~ dadosT[,'Autogestao'])
 })
 
-listaTestsProfic <- lapply(vars_paream, function(v){
-  t.test(dadosT[,v] ~ dadosT[,'profic'])
+listaTestsOpenness <- lapply(vars_paream, function(v){
+  t.test(dadosT[,v] ~ dadosT[,'Openness'])
 })
 
-# Propensity Score para alfabetizados
+listaTestsOpenness <- lapply(vars_paream, function(v){
+  t.test(dadosT[,v] ~ dadosT[,'Autoconceito'])
+})
 
-alfabPSModel <- glm(alfab ~ id_real + sexoT + racaT +
-                      paiMedioCompleto + naoTevePai + maeMedioCompleto + 
-                      naoTeveMae + ensinoMedioCompleto,
-                    family = binomial(), data = dadosT)
-summary(alfabPSModel)
+# Propensity Score para Autogestao
 
-alfabPredicted <- data.frame(alfabPScore = predict(alfabPSModel, type = "response"),
-                             alfab = alfabPSModel$model$alfab)
+AutogestaoPSModel <- glm(Autogestao ~ id_real + sexoT + racaT +
+                           maeMedioCompleto,
+                         family = binomial(), data = dadosT)
+summary(AutogestaoPSModel)
 
-# Propensity Score para proficientes
-proficPSModel <- glm(profic ~ id_real + sexoT + racaT +
-                       paiMedioCompleto + naoTevePai + maeMedioCompleto + 
-                       naoTeveMae + ensinoMedioCompleto, 
+AutogestaoPredicted <- data.frame(AutogestaoPScore = predict(AutogestaoPSModel, type = "response"), 
+                                  Autogestao = AutogestaoPSModel$model$Autogestao)
+
+# Propensity Score para Openness
+OpennessPSModel <- glm(Openness ~ id_real + sexoT + racaT +
+                         maeMedioCompleto,
                        family = binomial(), data = dadosT)
-summary(proficPSModel)
+summary(OpennessPSModel)
 
-proficPredicted <- data.frame(proficPScore = predict(proficPSModel, type = "response"),
-                             profic = proficPSModel$model$profic)
+OpennessPredicted <- data.frame(OpennessPScore = predict(OpennessPSModel, type = "response"), 
+                                Openness = OpennessPSModel$model$Openness)
 
-# Avaliacao da regiao de suporte comum para alfabetizados
-rotulos <- paste("Categoria de alfatebitação: ", c("Alfabetizados","Analfabetos funcionais"))
-alfabPredicted %>% mutate(alfab = ifelse(alfab == 1, rotulos[1],rotulos[2])) %>%
-  ggplot(aes(x = alfabPScore)) +
+# Propensity Score para Autoconceito
+AutoconceitoPSModel <- glm(Autoconceito ~ id_real + sexoT + racaT +
+                             maeMedioCompleto,
+                           family = binomial(), data = dadosT)
+summary(AutoconceitoPSModel)
+
+AutoconceitoPredicted <- data.frame(AutoconceitoPScore = predict(AutoconceitoPSModel, type = "response"), 
+                                    Autoconceito = AutoconceitoPSModel$model$Autoconceito)
+
+# Avaliacao da regiao de suporte comum para Autogestao
+rotulos <- paste("HSE - Autogestao: ", c("Acima da mediana","Abaixo da mediana"))
+AutogestaoPredicted %>% mutate(Autogestao = ifelse(Autogestao == 1, rotulos[1],rotulos[2])) %>%
+  ggplot(aes(x = AutogestaoPScore)) +
   geom_histogram(color = "white") +
-  facet_wrap(~alfab) +
-  xlab("Probabilidade de ser alfabetizado") +
+  facet_wrap(~Autogestao) +
+  xlab("Probabilidade de Autogestao acima da mediana") +
   theme_bw()
 
-# Avaliacao da regiao de suporte comum para proficientes
-rotulos <- paste("Categoria de alfatebitação: ", c("Proficientes","Não Proficientes"))
-proficPredicted %>% mutate(profic = ifelse(profic == 1, rotulos[1],rotulos[2])) %>%
-  ggplot(aes(x = proficPScore)) +
+# Avaliacao da regiao de suporte comum para Openness
+rotulos <- paste("HSE - Openness: ", c("Acima da media","Abaixo da mediana"))
+OpennessPredicted %>% mutate(Openness = ifelse(Openness == 1, rotulos[1],rotulos[2])) %>%
+  ggplot(aes(x = OpennessPScore)) +
   geom_histogram(color = "white") +
-  facet_wrap(~profic) +
-  xlab("Probabilidade de ser proficiente") +
+  facet_wrap(~Openness) +
+  xlab("Probabilidade de Openness acima da mediana") +
   theme_bw()
 
-# Matching para alfabetizados
-alfabSemMissing <- dadosT %>% select(ProfComb, alfab, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% na.omit()
+# Avaliacao da regiao de suporte comum para Autoconceito
+rotulos <- paste("HSE - Autoconceito: ", c("Acima da media","Abaixo da mediana"))
+AutoconceitoPredicted %>% mutate(Autoconceito = ifelse(Autoconceito == 1, rotulos[1],rotulos[2])) %>%
+  ggplot(aes(x = AutoconceitoPScore)) +
+  geom_histogram(color = "white") +
+  facet_wrap(~Autoconceito) +
+  xlab("Probabilidade de Autoconceito acima da mediana") +
+  theme_bw()
 
-modMatchAlfab <- matchit(alfab ~ id_real + sexoT + racaT +
-                       paiMedioCompleto + naoTevePai + maeMedioCompleto + 
-                       naoTeveMae + ensinoMedioCompleto,
-                       method = "nearest", discard = 'both', data=alfabSemMissing)
+# Matching para Autogestao
+AutogestaoSemMissing <- dadosT %>% 
+  select(ProfComb, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% 
+  na.omit()
 
-matchedAlfab <- match.data(modMatchAlfab)
+modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
+                              method = "nearest", discard = "both", data = AutogestaoSemMissing)
 
-# Matching para proficientes
-proficSemMissing <- dadosT %>% select(ProfComb, profic, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% na.omit()
+matchedAutogestao <- match.data(modMatchAutogestao)
 
-modMatchProfic <- matchit(profic ~ id_real + sexoT + racaT + 
-                            paiMedioCompleto + naoTevePai + maeMedioCompleto + 
-                            naoTeveMae + ensinoMedioCompleto,
-                       method = "nearest", discard = 'both', data = proficSemMissing)
+# Matching para Openness
+OpennessSemMissing <- dadosT %>% 
+  select(ProfComb, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% 
+  na.omit()
 
-matchedProfic <- match.data(modMatchProfic)
+modMatchOpenness <- matchit(Openness ~ id_real + sexoT + racaT + maeMedioCompleto,
+                            method = "nearest", discard = 'both', data = OpennessSemMissing)
+
+matchedOpenness <- match.data(modMatchOpenness)
+
+# Matching para Autoconceito
+AutoconceitoSemMissing <- dadosT %>% 
+  select(ProfComb, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% 
+  na.omit()
+
+modMatchAutoconceito <- matchit(Autoconceito ~ id_real + sexoT + racaT + maeMedioCompleto,
+                                method = "nearest", discard = 'both', data = AutoconceitoSemMissing)
+
+matchedAutoconceito <- match.data(modMatchAutoconceito)
 
 #Inspecao visual do matching
-fn_bal <- function(matchedAlfab,variable) {
-  matchedAlfab$variable <- matchedAlfab[,variable]
-  matchedAlfab$alfab <- as.factor(matchedAlfab$alfab)
-  support <- c(min(matchedAlfab$variable), max(matchedAlfab$variable))
-  ggplot(matchedAlfab, aes(x = distance, y = variable, color = alfab)) +
+fn_bal <- function(matchedAutogestao,variable) {
+  matchedAutogestao$variable <- matchedAutogestao[,variable]
+  matchedAutogestao$Autogestao <- as.factor(matchedAutogestao$Autogestao)
+  support <- c(min(matchedAutogestao$variable), max(matchedAutogestao$variable))
+  ggplot(matchedAutogestao, aes(x = distance, y = variable, color = Autogestao)) +
     geom_point(alpha = 0.2, size = 1.3) +
     geom_smooth(method = 'loess', se = F) +
     xlab('Propensity Score') +
@@ -138,20 +160,18 @@ fn_bal <- function(matchedAlfab,variable) {
 library(gridExtra)
 
 grid.arrange(
-  fn_bal(matchedAlfab, 'id_real'),
-  fn_bal(matchedAlfab, 'sexoT'),
-  fn_bal(matchedAlfab, 'racaT'),
-  fn_bal(matchedAlfab, 'paiMedioCompleto'),
-  fn_bal(matchedAlfab, 'maeMedioCompleto'),
-  fn_bal(matchedAlfab, 'ensinoMedioCompleto'),
-  nrow = 3, widths = c(1, 0.8)
+  fn_bal(matchedAutogestao, 'id_real'),
+  fn_bal(matchedAutogestao, 'sexoT'),
+  fn_bal(matchedAutogestao, 'racaT'),
+  fn_bal(matchedAutogestao, 'maeMedioCompleto'),
+  nrow = 2, widths = c(1, 0.8)
 )
 
-fn_bal <- function(matchedProfic,variable) {
-  matchedProfic$variable <- matchedProfic[,variable]
-  matchedProfic$profic <- as.factor(matchedProfic$profic)
-  support <- c(min(matchedProfic$variable), max(matchedProfic$variable))
-  ggplot(matchedProfic, aes(x = distance, y = variable, color = profic)) +
+fn_bal <- function(matchedOpenness,variable) {
+  matchedOpenness$variable <- matchedOpenness[,variable]
+  matchedOpenness$Openness <- as.factor(matchedOpenness$Openness)
+  support <- c(min(matchedOpenness$variable), max(matchedOpenness$variable))
+  ggplot(matchedOpenness, aes(x = distance, y = variable, color = Openness)) +
     geom_point(alpha = 0.2, size = 1.3) +
     geom_smooth(method = 'loess', se = F) +
     xlab('Propensity Score') +
@@ -161,35 +181,68 @@ fn_bal <- function(matchedProfic,variable) {
 }
 
 grid.arrange(
-  fn_bal(matchedProfic, 'id_real'),
-  fn_bal(matchedProfic, 'sexoT'),
-  fn_bal(matchedProfic, 'racaT'),
-  fn_bal(matchedProfic, 'paiMedioCompleto'),
-  fn_bal(matchedProfic, 'maeMedioCompleto'),
-  fn_bal(matchedProfic, 'ensinoMedioCompleto'),
-  nrow = 3, widths = c(1, 0.8)
+  fn_bal(matchedOpenness, 'id_real'),
+  fn_bal(matchedOpenness, 'sexoT'),
+  fn_bal(matchedOpenness, 'racaT'),
+  fn_bal(matchedOpenness, 'maeMedioCompleto'),
+  nrow = 2, widths = c(1, 0.8)
+)
+
+fn_bal <- function(matchedAutoconceito,variable) {
+  matchedAutoconceito$variable <- matchedAutoconceito[,variable]
+  matchedAutoconceito$Autoconceito <- as.factor(matchedAutoconceito$Autoconceito)
+  support <- c(min(matchedAutoconceito$variable), max(matchedAutoconceito$variable))
+  ggplot(matchedAutoconceito, aes(x = distance, y = variable, color = Autoconceito)) +
+    geom_point(alpha = 0.2, size = 1.3) +
+    geom_smooth(method = 'loess', se = F) +
+    xlab('Propensity Score') +
+    ylab(variable) +
+    theme_bw() +
+    ylim(support)
+}
+
+grid.arrange(
+  fn_bal(matchedAutoconceito, 'id_real'),
+  fn_bal(matchedAutoconceito, 'sexoT'),
+  fn_bal(matchedAutoconceito, 'racaT'),
+  fn_bal(matchedAutoconceito, 'maeMedioCompleto'),
+  nrow = 2, widths = c(1, 0.8)
 )
 
 # Testes de media pos-pareamento
 
-mediaPosParAlfab <- matchedAlfab %>% group_by(alfab) %>% 
+mediaPosParAutogestao <- matchedAutogestao %>% group_by(Autogestao) %>% 
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean))
 
-mediaPosParProfic <- matchedProfic %>% group_by(profic) %>% 
+mediaPosParOpenness <- matchedOpenness %>% group_by(Openness) %>% 
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean))
 
-testeParAlfab <- lapply(vars_paream,function(v){
-  t.test(matchedAlfab[,v] ~ matchedAlfab$alfab)
+mediaPosParAutoconceito <- matchedAutoconceito %>% group_by(Autoconceito) %>% 
+  select(one_of(vars_paream)) %>% 
+  summarise_all(funs(mean))
+
+testeParAutogestao <- lapply(vars_paream,function(v){
+  t.test(matchedAutogestao[,v] ~ matchedAutogestao$Autogestao)
 })
 
-testeParProfic <- lapply(vars_paream,function(v){
-  t.test(matchedProfic[,v] ~ matchedProfic$profic)
+testeParOpenness <- lapply(vars_paream,function(v){
+  t.test(matchedOpenness[,v] ~ matchedOpenness$Openness)
 })
 
-#Estimando os efeitos para os alfabetizados
+testeParAutoconceito <- lapply(vars_paream,function(v){
+  t.test(matchedAutoconceito[,v] ~ matchedAutoconceito$Autoconceito)
+})
 
-lmAlfab <- lm(ProfComb ~ Autogestao + Openness + Autoconceito, data = matchedAlfab)
+#Estimando os efeitos para os Autogestaoetizados
 
-lmProfic <- lm(ProfComb ~ Autogestao + Openness + Autoconceito, data = matchedProfic)
+didAutogestao <- lm(ProfComb ~ Autogestao + ensinoMedioCompleto + Autogestao*ensinoMedioCompleto, 
+                    data = matchedAutogestao)
+
+didOpenness <- lm(ProfComb ~ Openness + ensinoMedioCompleto + Openness*ensinoMedioCompleto, 
+                  data = matchedOpenness)
+
+
+didAutoconceito <- lm(ProfComb ~ Autoconceito + ensinoMedioCompleto + Autoconceito*ensinoMedioCompleto, 
+                      data = matchedAutoconceito)
