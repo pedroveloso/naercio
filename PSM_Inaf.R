@@ -9,8 +9,8 @@ dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
 dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1,p3,c(p12:p13),c(ProfComb:se4_n)))
 
-dadosT <- dados %>% mutate(Autogestao = ifelse(ProfComb <= 95, 0, 1)) %>% 
-  mutate(Openness = ifelse(ProfComb > 137, 1, 0)) %>% 
+dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
+  mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
   mutate(Autogestao = ifelse(c_thet > median(c_thet), 1, 0)) %>%
   mutate(Openness = ifelse(o_thet > median(o_thet), 1, 0)) %>% 
   mutate(Autoconceito = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
