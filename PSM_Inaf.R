@@ -29,7 +29,7 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
 
 #Comparacao sem pareamento para HSEs
 
-vars_paream <- c('id_real','sexoT', 'racaT', 'maeMedioCompleto', 'ensinoMedioCompleto')
+vars_paream <- c('id_real','sexoT', 'racaT', 'maeMedioCompleto')
 
 
 tabelaVarsPareamAutogestao <- dadosT %>% group_by(Autogestao) %>%
@@ -115,7 +115,7 @@ AutoconceitoPredicted %>% mutate(Autoconceito = ifelse(Autoconceito == 1, rotulo
 
 # Matching para Autogestao
 AutogestaoSemMissing <- dadosT %>% 
-  select(ProfComb, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% 
+  select(ProfComb, Autogestao, Openness, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
 modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
@@ -125,7 +125,7 @@ matchedAutogestao <- match.data(modMatchAutogestao)
 
 # Matching para Openness
 OpennessSemMissing <- dadosT %>% 
-  select(ProfComb, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% 
+  select(ProfComb, Autogestao, Openness, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
 modMatchOpenness <- matchit(Openness ~ id_real + sexoT + racaT + maeMedioCompleto,
@@ -135,7 +135,7 @@ matchedOpenness <- match.data(modMatchOpenness)
 
 # Matching para Autoconceito
 AutoconceitoSemMissing <- dadosT %>% 
-  select(ProfComb, Autogestao, Openness, Autoconceito, one_of(vars_paream)) %>% 
+  select(ProfComb, Autogestao, Openness, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
 modMatchAutoconceito <- matchit(Autoconceito ~ id_real + sexoT + racaT + maeMedioCompleto,
