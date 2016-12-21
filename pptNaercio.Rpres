@@ -30,8 +30,77 @@ Methodology
 Slide With Code
 ========================================================
 
-```{r}
-summary(cars)
+
+```{r, echo=FALSE}
+
+library(MatchIt)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+
+dados <- read.csv(file.choose(), sep=";", na.strings = ".")
+
+dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1,p3,c(p12:p13),c(ProfComb:se4_n)))
+
+dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
+  mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
+  mutate(Autogestao = ifelse(c_thet > median(c_thet), 1, 0)) %>%
+  mutate(Openness = ifelse(o_thet > median(o_thet), 1, 0)) %>% 
+  mutate(Autoconceito = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
+  mutate(sexoT = ifelse(sexo == 1, 1, 0)) %>% 
+  mutate(racaT = ifelse(raca == 1, 1, 0)) %>%
+  mutate(paiMedioCompleto = ifelse(p12 <= 5, 0, ifelse(p12 != 9 | p12 != 99, 1, 0))) %>% 
+  mutate(naoTevePai = ifelse(p12 == 9, 1, 0)) %>%
+  mutate(naoRespPai = ifelse(p12 == 99, 1, 0)) %>% 
+  mutate(maeMedioCompleto = ifelse(p13 <= 5, 0, ifelse(p13 != 9 | p13 != 99, 1, 0))) %>% 
+  mutate(naoTeveMae = ifelse(p13 == 9, 1, 0)) %>%
+  mutate(naoRespMae = ifelse(p13 == 99, 1, 0)) %>%
+  mutate(centroSul = ifelse(EST >= 31, 1, 0)) %>% 
+  mutate(ensinoFundCompleto = ifelse(p1 >= 1 & p1 <= 8, 0, 1)) %>% 
+  mutate(ensinoMedioCompleto = ifelse(p1 >= 1 & p1 <= 11, 0, 1 )) %>% 
+  mutate(aindaEstuda = ifelse(p3 == 1, 1, 0))
+
+# Propensity Score para Autogestao
+
+AutogestaoPSModel <- glm(Autogestao ~ id_real + sexoT + racaT +
+                           maeMedioCompleto,
+                         family = binomial(), data = dadosT)
+summary(AutogestaoPSModel)
+
+AutogestaoPredicted <- data.frame(AutogestaoPScore = predict(AutogestaoPSModel, type = "response"), 
+                                  Autogestao = AutogestaoPSModel$model$Autogestao)
+
+# Propensity Score para Openness
+OpennessPSModel <- glm(Openness ~ id_real + sexoT + racaT +
+                         maeMedioCompleto,
+                       family = binomial(), data = dadosT)
+summary(OpennessPSModel)
+
+OpennessPredicted <- data.frame(OpennessPScore = predict(OpennessPSModel, type = "response"), 
+                                Openness = OpennessPSModel$model$Openness)
+
+# Propensity Score para Autoconceito
+AutoconceitoPSModel <- glm(Autoconceito ~ id_real + sexoT + racaT +
+                             maeMedioCompleto,
+                           family = binomial(), data = dadosT)
+summary(AutoconceitoPSModel)
+
+AutoconceitoPredicted <- data.frame(AutoconceitoPScore = predict(AutoconceitoPSModel, type = "response"), 
+                                    Autoconceito = AutoconceitoPSModel$model$Autoconceito)
+
+# Avaliacao da regiao de suporte comum para Autogestao
+rotulos <- paste("HSE - Autogestao: ", c("Acima da mediana","Abaixo da mediana"))
+suportAutoG <- AutogestaoPredicted %>% mutate(Autogestao = ifelse(Autogestao == 1,
+                                                                  rotulos[1],rotulos[2])) %>%
+  ggplot(aes(x = AutogestaoPScore)) +
+  geom_histogram(color = "white") +
+  facet_wrap(~Autogestao) +
+  xlab("Probabilidade de Autogestao acima da mediana") +
+  theme_bw()
+
+suportAutoG
+
+
 ```
 
 Slide With Plot
