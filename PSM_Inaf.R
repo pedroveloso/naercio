@@ -4,6 +4,7 @@ library(MatchIt)
 library(plyr)
 library(dplyr)
 library(ggplot2)
+library(broom)
 
 dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
@@ -235,14 +236,17 @@ testeParAutoconceito <- lapply(vars_paream,function(v){
   t.test(matchedAutoconceito[,v] ~ matchedAutoconceito$Autoconceito)
 })
 
-#Estimando os efeitos para os Autogestaoetizados
+#Estimando os efeitos para HSE e salvando os resultados
 
 didAutogestao <- lm(ProfComb ~ Autogestao + ensinoMedioCompleto + Autogestao*ensinoMedioCompleto, 
                     data = matchedAutogestao)
+write.csv(tidy(didAutogestao), file = paste0(getwd(), '/Autogestao.csv'))
 
 didOpenness <- lm(ProfComb ~ Openness + ensinoMedioCompleto + Openness*ensinoMedioCompleto, 
                   data = matchedOpenness)
+write.csv(tidy(didOpenness), file = paste0(getwd(), '/Openess.csv'))
 
 
 didAutoconceito <- lm(ProfComb ~ Autoconceito + ensinoMedioCompleto + Autoconceito*ensinoMedioCompleto, 
                       data = matchedAutoconceito)
+write.csv(tidy(didAutoconceito), file = paste0(getwd(), '/Autoconceito.csv'))
