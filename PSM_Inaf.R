@@ -119,7 +119,7 @@ AutogestaoSemMissing <- dadosT %>%
   na.omit()
 
 modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
-                              method = "nearest", discard = "both", data = AutogestaoSemMissing)
+                              method = "cem", discard = "both", data = AutogestaoSemMissing)
 
 matchedAutogestao <- match.data(modMatchAutogestao)
 
@@ -129,7 +129,7 @@ OpennessSemMissing <- dadosT %>%
   na.omit()
 
 modMatchOpenness <- matchit(Openness ~ id_real + sexoT + racaT + maeMedioCompleto,
-                            method = "nearest", discard = 'both', data = OpennessSemMissing)
+                            method = "cem", discard = 'both', data = OpennessSemMissing)
 
 matchedOpenness <- match.data(modMatchOpenness)
 
@@ -139,7 +139,7 @@ AutoconceitoSemMissing <- dadosT %>%
   na.omit()
 
 modMatchAutoconceito <- matchit(Autoconceito ~ id_real + sexoT + racaT + maeMedioCompleto,
-                                method = "nearest", discard = 'both', data = AutoconceitoSemMissing)
+                                method = "cem", discard = 'both', data = AutoconceitoSemMissing)
 
 matchedAutoconceito <- match.data(modMatchAutoconceito)
 
