@@ -41,9 +41,6 @@ tabelaVarsPareamOpenness <- dadosT %>% group_by(Openness) %>%
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean(.,na.rm=T)))
 
-tabelaVarsPareamOpenness <- dadosT %>% group_by(Autoconceito) %>%
-  select(one_of(vars_paream)) %>% 
-  summarise_all(funs(mean(.,na.rm=T)))
 
 #Criando funcao para teste de medias e testando para as HSEs
 
@@ -53,10 +50,6 @@ listaTestsAutogestao <- lapply(vars_paream, function(v){
 
 listaTestsOpenness <- lapply(vars_paream, function(v){
   t.test(dadosT[,v] ~ dadosT[,'Openness'])
-})
-
-listaTestsOpenness <- lapply(vars_paream, function(v){
-  t.test(dadosT[,v] ~ dadosT[,'Autoconceito'])
 })
 
 # Propensity Score para Autogestao
@@ -78,15 +71,6 @@ summary(OpennessPSModel)
 OpennessPredicted <- data.frame(OpennessPScore = predict(OpennessPSModel, type = "response"), 
                                 Openness = OpennessPSModel$model$Openness)
 
-# Propensity Score para Autoconceito
-AutoconceitoPSModel <- glm(Autoconceito ~ id_real + sexoT + racaT +
-                             maeMedioCompleto,
-                           family = binomial(), data = dadosT)
-summary(AutoconceitoPSModel)
-
-AutoconceitoPredicted <- data.frame(AutoconceitoPScore = predict(AutoconceitoPSModel, type = "response"), 
-                                    Autoconceito = AutoconceitoPSModel$model$Autoconceito)
-
 # Avaliacao da regiao de suporte comum para Autogestao
 rotulos <- paste("HSE - Autogestao: ", c("Acima da mediana","Abaixo da mediana"))
 AutogestaoPredicted %>% mutate(Autogestao = ifelse(Autogestao == 1, rotulos[1],rotulos[2])) %>%
@@ -103,15 +87,6 @@ OpennessPredicted %>% mutate(Openness = ifelse(Openness == 1, rotulos[1],rotulos
   geom_histogram(color = "white") +
   facet_wrap(~Openness) +
   xlab("Probabilidade de Openness acima da mediana") +
-  theme_bw()
-
-# Avaliacao da regiao de suporte comum para Autoconceito
-rotulos <- paste("HSE - Autoconceito: ", c("Acima da media","Abaixo da mediana"))
-AutoconceitoPredicted %>% mutate(Autoconceito = ifelse(Autoconceito == 1, rotulos[1],rotulos[2])) %>%
-  ggplot(aes(x = AutoconceitoPScore)) +
-  geom_histogram(color = "white") +
-  facet_wrap(~Autoconceito) +
-  xlab("Probabilidade de Autoconceito acima da mediana") +
   theme_bw()
 
 # Matching para Autogestao
@@ -133,16 +108,6 @@ modMatchOpenness <- matchit(Openness ~ id_real + sexoT + racaT + maeMedioComplet
                             method = "nearest", discard = 'both', data = OpennessSemMissing)
 
 matchedOpenness <- match.data(modMatchOpenness)
-
-# Matching para Autoconceito
-AutoconceitoSemMissing <- dadosT %>% 
-  select(ProfComb, Autogestao, Openness, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
-  na.omit()
-
-modMatchAutoconceito <- matchit(Autoconceito ~ id_real + sexoT + racaT + maeMedioCompleto,
-                                method = "nearest", discard = 'both', data = AutoconceitoSemMissing)
-
-matchedAutoconceito <- match.data(modMatchAutoconceito)
 
 #Inspecao visual do matching
 fn_bal <- function(matchedAutogestao,variable) {
@@ -189,27 +154,6 @@ grid.arrange(
   nrow = 2, widths = c(1, 0.8)
 )
 
-fn_bal <- function(matchedAutoconceito,variable) {
-  matchedAutoconceito$variable <- matchedAutoconceito[,variable]
-  matchedAutoconceito$Autoconceito <- as.factor(matchedAutoconceito$Autoconceito)
-  support <- c(min(matchedAutoconceito$variable), max(matchedAutoconceito$variable))
-  ggplot(matchedAutoconceito, aes(x = distance, y = variable, color = Autoconceito)) +
-    geom_point(alpha = 0.2, size = 1.3) +
-    geom_smooth(method = 'loess', se = F) +
-    xlab('Propensity Score') +
-    ylab(variable) +
-    theme_bw() +
-    ylim(support)
-}
-
-grid.arrange(
-  fn_bal(matchedAutoconceito, 'id_real'),
-  fn_bal(matchedAutoconceito, 'sexoT'),
-  fn_bal(matchedAutoconceito, 'racaT'),
-  fn_bal(matchedAutoconceito, 'maeMedioCompleto'),
-  nrow = 2, widths = c(1, 0.8)
-)
-
 # Testes de media pos-pareamento
 
 mediaPosParAutogestao <- matchedAutogestao %>% group_by(Autogestao) %>% 
@@ -217,10 +161,6 @@ mediaPosParAutogestao <- matchedAutogestao %>% group_by(Autogestao) %>%
   summarise_all(funs(mean))
 
 mediaPosParOpenness <- matchedOpenness %>% group_by(Openness) %>% 
-  select(one_of(vars_paream)) %>% 
-  summarise_all(funs(mean))
-
-mediaPosParAutoconceito <- matchedAutoconceito %>% group_by(Autoconceito) %>% 
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean))
 
@@ -232,10 +172,6 @@ testeParOpenness <- lapply(vars_paream,function(v){
   t.test(matchedOpenness[,v] ~ matchedOpenness$Openness)
 })
 
-testeParAutoconceito <- lapply(vars_paream,function(v){
-  t.test(matchedAutoconceito[,v] ~ matchedAutoconceito$Autoconceito)
-})
-
 #Estimando os efeitos para HSE e salvando os resultados
 
 didAutogestao <- lm(ProfComb ~ Autogestao + ensinoMedioCompleto + Autogestao*ensinoMedioCompleto, 
@@ -245,8 +181,3 @@ write.csv(tidy(didAutogestao), file = paste0(getwd(), '/Autogestao.csv'))
 didOpenness <- lm(ProfComb ~ Openness + ensinoMedioCompleto + Openness*ensinoMedioCompleto, 
                   data = matchedOpenness)
 write.csv(tidy(didOpenness), file = paste0(getwd(), '/Openess.csv'))
-
-
-didAutoconceito <- lm(ProfComb ~ Autoconceito + ensinoMedioCompleto + Autoconceito*ensinoMedioCompleto, 
-                      data = matchedAutoconceito)
-write.csv(tidy(didAutoconceito), file = paste0(getwd(), '/Autoconceito.csv'))
