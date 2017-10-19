@@ -27,11 +27,11 @@ Methodology
 - Treatment: NCS(i) > median(NCS)
 - Diff-in-diff time dimension: Fishing High School
 
-Slide With Code
+Common suport region - Selfmanagement
 ========================================================
 
-```{r}
-summary(cars)
+```{r, echo = FALSE}
+![Autogestao](paste0("C:/Users/Pedro/Documents/GitHub/naercio","/pptNaercio-figure/supAG.png"))
 ```
 
 Slide With Plot
