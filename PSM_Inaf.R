@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## REFERENCE: http://stanford.edu/~ejdemyr/r-tutorials-archive/tutorial8.html
 
 library(MatchIt)
@@ -6,6 +5,7 @@ library(plyr)
 library(dplyr)
 library(ggplot2)
 library(broom)
+library(kSamples)
 
 dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
@@ -45,26 +45,66 @@ dadosT <- dadosT %>% mutate(c4_n = as.character(c4_n)) %>%
 
 #Comparacao sem pareamento para HSEs
 
-vars_paream <- c('id_real', 'idade1serie','sexoT', 'racaT', 'maeMedioCompleto')
+vars_paream <- c('id_real', 'sexoT', 'racaT', 'maeMedioCompleto')
 
 
 tabelaVarsPareamAutogestao <- dadosT %>% group_by(Autogestao) %>%
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean(.,na.rm=T)))
 
+tabelaVarsPareamAutogestao <- as.data.frame(t(tabelaVarsPareamAutogestao))
+colnames(tabelaVarsPareamAutogestao) <- c("ADesenvolver", "MuitoDesenvolvido")
+tabelaVarsPareamAutogestao <- tabelaVarsPareamAutogestao %>% mutate(DiffMedia = round(MuitoDesenvolvido - ADesenvolver, 2))
+tabelaVarsPareamAutogestao <- tabelaVarsPareamAutogestao[2:nrow(tabelaVarsPareamAutogestao), ]
+
 tabelaVarsPareamAberturaNovo <- dadosT %>% group_by(AberturaNovo) %>%
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean(.,na.rm=T)))
 
+tabelaVarsPareamAberturaNovo <- as.data.frame(t(tabelaVarsPareamAberturaNovo))
+colnames(tabelaVarsPareamAberturaNovo) <- c("ADesenvolver", "MuitoDesenvolvido")
+tabelaVarsPareamAberturaNovo <- tabelaVarsPareamAberturaNovo %>%  mutate(DiffMedia = round(MuitoDesenvolvido - ADesenvolver, 2))
+tabelaVarsPareamAberturaNovo <- tabelaVarsPareamAberturaNovo[2:nrow(tabelaVarsPareamAberturaNovo), ]
+
 
 #Criando funcao para teste de medias e testando para as HSEs
 
+AutogestaoMatchResult <- data.frame(var = vars_paream, mediaSemPar = tabelaVarsPareamAutogestao$DiffMedia, 
+                                    pValueSemPar = numeric(length(vars_paream)),
+                                    pValueSemParDist = numeric(length(vars_paream)),
+                                    mediaComPar = numeric(length(vars_paream)),
+                                    pValueComPar = numeric(length(vars_paream)),
+                                    pValueComParDist = numeric(length(vars_paream)))
+
+
 listaTestsAutogestao <- lapply(vars_paream, function(v){
-  t.test(dadosT[,v] ~ dadosT[,'Autogestao'])
+  teste <- ad.test(dadosT[,v] ~ dadosT[,'Autogestao'], method = 'exact', Nsim = 1e5)
+  AutogestaoMatchResult[which(AutogestaoMatchResult$var == v), "pValueSemParDist"] <<- round(teste$ad[2,4], 4)
 })
 
+listaTestsAutogestao <- lapply(vars_paream, function(v){
+  teste <- t.test(dadosT[,v] ~ dadosT[,'Autogestao'])
+  AutogestaoMatchResult[which(AutogestaoMatchResult$var == v), "pValueSemPar"] <<- round(teste$p.value, 4)
+  return(teste)
+})
+
+AberturaNovoMatchResult <- data.frame(var = vars_paream, mediaSemPar = tabelaVarsPareamAberturaNovo$DiffMedia, 
+                                    pValueSemPar = numeric(length(vars_paream)),
+                                    pValueSemParDist = numeric(length(vars_paream)),
+                                    mediaComPar = numeric(length(vars_paream)),
+                                    pValueComPar = numeric(length(vars_paream)),
+                                    pValueComParDist = numeric(length(vars_paream)))
+
 listaTestsAberturaNovo <- lapply(vars_paream, function(v){
-  t.test(dadosT[,v] ~ dadosT[,'AberturaNovo'])
+teste <- ad.test(dadosT[,v] ~ dadosT[,'AberturaNovo'], method = 'exact', Nsim = 1e5)
+AberturaNovoMatchResult[which(AberturaNovoMatchResult$var == v), "pValueSemParDist"] <<- round(teste$ad[2,4], 4)
+})
+
+
+listaTestsAberturaNovo <- lapply(vars_paream, function(v){
+  teste <- t.test(dadosT[,v] ~ dadosT[,'AberturaNovo'])
+  AberturaNovoMatchResult[which(AberturaNovoMatchResult$var == v), "pValueSemPar"] <<- round(teste$p.value, 4)
+  return(teste)
 })
 
 # Propensity Score para Autogestao
@@ -88,11 +128,11 @@ AberturaNovoPredicted <- data.frame(AberturaNovoPScore = predict(AberturaNovoPSM
 
 # Avaliacao da regiao de suporte comum para Autogestao
 rotulos <- paste("HSE - Autogestao: ", c("Muito Desenvolvido","A desenvolver"))
-AutogestaoPredicted %>% mutate(Autogestao = ifelse(Autogestao == 1, rotulos[1],rotulos[2])) %>%
+AutogestaoPredicted %>% mutate(Autogestao = ifelse(Autogestao == 1, rotulos[1], rotulos[2])) %>%
   ggplot(aes(x = AutogestaoPScore)) +
   geom_histogram(color = "white") +
   facet_wrap(~Autogestao) +
-  xlab("Probabilidade de Autogestao acima da mediana") +
+  xlab("Probabilidade de Autogestao muito desenvolvida") +
   theme_bw()
 
 # Avaliacao da regiao de suporte comum para AberturaNovo
@@ -101,7 +141,7 @@ AberturaNovoPredicted %>% mutate(AberturaNovo = ifelse(AberturaNovo == 1, rotulo
   ggplot(aes(x = AberturaNovoPScore)) +
   geom_histogram(color = "white") +
   facet_wrap(~AberturaNovo) +
-  xlab("Probabilidade de AberturaNovo acima da mediana") +
+  xlab("Probabilidade de AberturaNovo muito desenvolvida") +
   theme_bw()
 
 # Matching para Autogestao
@@ -109,7 +149,7 @@ AutogestaoSemMissing <- dadosT %>%
   select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
-modMatchAutogestao <- matchit(Autogestao ~ id_real + idade1serie + sexoT + racaT + maeMedioCompleto,
+modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
                               method = "nearest", discard = "both", data = AutogestaoSemMissing)
 
 matchedAutogestao <- match.data(modMatchAutogestao)
@@ -119,7 +159,7 @@ AberturaNovoSemMissing <- dadosT %>%
   select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
-modMatchAberturaNovo <- matchit(AberturaNovo ~ id_real + idade1serie+ sexoT + racaT + maeMedioCompleto,
+modMatchAberturaNovo <- matchit(AberturaNovo ~ id_real + sexoT + racaT + maeMedioCompleto,
                             method = "nearest", discard = 'both', data = AberturaNovoSemMissing)
 
 matchedAberturaNovo <- match.data(modMatchAberturaNovo)
@@ -175,17 +215,48 @@ mediaPosParAutogestao <- matchedAutogestao %>% group_by(Autogestao) %>%
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean))
 
+mediaPosParAutogestao <- as.data.frame(t(mediaPosParAutogestao))
+colnames(mediaPosParAutogestao) <- c("ADesenvolver", "MuitoDesenvolvido")
+mediaPosParAutogestao <- mediaPosParAutogestao %>% mutate(DiffMedia = round(MuitoDesenvolvido - ADesenvolver, 2))
+mediaPosParAutogestao <- mediaPosParAutogestao[2:nrow(mediaPosParAutogestao), ]
+
 mediaPosParAberturaNovo <- matchedAberturaNovo %>% group_by(AberturaNovo) %>% 
   select(one_of(vars_paream)) %>% 
   summarise_all(funs(mean))
 
+mediaPosParAberturaNovo <- as.data.frame(t(mediaPosParAberturaNovo))
+colnames(mediaPosParAberturaNovo) <- c("ADesenvolver", "MuitoDesenvolvido")
+mediaPosParAberturaNovo <- mediaPosParAberturaNovo %>% mutate(DiffMedia = round(MuitoDesenvolvido - ADesenvolver, 2))
+mediaPosParAberturaNovo <- mediaPosParAberturaNovo[2:nrow(mediaPosParAberturaNovo), ]
+
+AutogestaoMatchResult$mediaComPar <- mediaPosParAutogestao$DiffMedia
+
+testeParAutogestao <- lapply(vars_paream, function(v){
+  teste <- ad.test(matchedAutogestao[,v] ~ matchedAutogestao$Autogestao, method = 'exact', Nsim = 1e5)
+  AutogestaoMatchResult[which(AutogestaoMatchResult$var == v), "pValueComParDist"] <<- round(teste$ad[2,4], 4)
+})
+
 testeParAutogestao <- lapply(vars_paream,function(v){
-  t.test(matchedAutogestao[,v] ~ matchedAutogestao$Autogestao)
+  teste <- t.test(matchedAutogestao[,v] ~ matchedAutogestao$Autogestao)
+  AutogestaoMatchResult[which(AutogestaoMatchResult$var == v), "pValueComPar"] <<- round(teste$p.value, 4)
+  return(teste)
+})
+
+AberturaNovoMatchResult$mediaComPar <- mediaPosParAberturaNovo$DiffMedia
+
+testeParAberturaNovo <- lapply(vars_paream, function(v){
+  teste <- ad.test(matchedAberturaNovo[,v] ~ matchedAberturaNovo$AberturaNovo, method = 'exact', Nsim = 1e5)
+  AberturaNovoMatchResult[which(AberturaNovoMatchResult$var == v), "pValueComParDist"] <<- round(teste$ad[2,4], 4)
 })
 
 testeParAberturaNovo <- lapply(vars_paream,function(v){
-  t.test(matchedAberturaNovo[,v] ~ matchedAberturaNovo$AberturaNovo)
+  teste <- t.test(matchedAberturaNovo[,v] ~ matchedAberturaNovo$AberturaNovo)
+  AberturaNovoMatchResult[which(AberturaNovoMatchResult$var == v), "pValueComPar"] <<- round(teste$p.value, 4)
+  return(teste)
 })
+
+write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/MatchingSummary_Autogestao.csv'))
+write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/MatchingSummary_AberturaNovo.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
@@ -196,4 +267,3 @@ write.csv(tidy(didAutogestao), file = paste0(getwd(), '/Autogestao.csv'))
 didAberturaNovo <- lm(ProfComb ~ AberturaNovo + ensinoMedioCompleto + AberturaNovo*ensinoMedioCompleto, 
                   data = matchedAberturaNovo)
 write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/Openess.csv'))
->>>>>>> 6705b3583ec4fd7ca005aee68a4d2c76ef19da2d
