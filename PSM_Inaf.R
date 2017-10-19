@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## REFERENCE: http://stanford.edu/~ejdemyr/r-tutorials-archive/tutorial8.html
 
 library(MatchIt)
@@ -195,3 +196,4 @@ write.csv(tidy(didAutogestao), file = paste0(getwd(), '/Autogestao.csv'))
 didAberturaNovo <- lm(ProfComb ~ AberturaNovo + ensinoMedioCompleto + AberturaNovo*ensinoMedioCompleto, 
                   data = matchedAberturaNovo)
 write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/Openess.csv'))
+>>>>>>> 6705b3583ec4fd7ca005aee68a4d2c76ef19da2d
