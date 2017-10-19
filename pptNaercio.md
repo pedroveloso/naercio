@@ -27,6 +27,7 @@ Methodology
 - Treatment: NCS(i) > median(NCS)
 - Diff-in-diff time dimension: Fishing High School
 
+<<<<<<< HEAD
 Common suport region - Selfmanagement
 ========================================================
 
@@ -39,3 +40,25 @@ Error in parse(text = x, srcfile = src) : <text>:1:2: '[' inesperado
 1: ![
      ^
 ```
+=======
+Slide With Plot
+========================================================
+
+
+```{r, echo=FALSE}
+
+library(MatchIt)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+
+
+
+```
+
+
+Slide With Plot
+========================================================
+
+
+>>>>>>> 6705b3583ec4fd7ca005aee68a4d2c76ef19da2d
