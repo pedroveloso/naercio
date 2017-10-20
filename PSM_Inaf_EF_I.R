@@ -152,13 +152,13 @@ testeParAutogestao <- lapply(vars_paream,function(v){
   return(teste)
 })
 
-write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/MatchingSummary_Autogestao_EF_I.csv'))
+write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_Autogestao_EF_I.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
 didAutogestao <- lm(ProfComb ~ Autogestao + ensinoFundCompleto + Autogestao*ensinoFundCompleto, 
                     data = matchedAutogestao)
-write.csv(tidy(didAutogestao), file = paste0(getwd(), '/Autogestao_EF_I.csv'))
+write.csv(tidy(didAutogestao), file = paste0(getwd(), '/results/Autogestao_EF_I.csv'))
 
 ############### --------------------> ABERTURA AO NOVO <------------------- ###############
 
@@ -277,10 +277,10 @@ testeParAberturaNovo <- lapply(vars_paream,function(v){
   return(teste)
 })
 
-write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/MatchingSummary_AberturaNovo_EF_I.csv'))
+write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_AberturaNovo_EF_I.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
 didAberturaNovo <- lm(ProfComb ~ AberturaNovo + ensinoFundCompleto + AberturaNovo*ensinoFundCompleto, 
                       data = matchedAberturaNovo)
-write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/Openess_EF_I.csv'))
+write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/results/Openess_EF_I.csv'))

@@ -100,7 +100,7 @@ AutogestaoSemMissing <- dadosW %>%
   na.omit()
 
 modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
-                              method = "nearest", discard = "both", data = AutogestaoSemMissing)
+                              method = "cem", discard = "both", data = AutogestaoSemMissing)
 
 matchedAutogestao <- match.data(modMatchAutogestao)
 
@@ -226,7 +226,7 @@ AberturaNovoSemMissing <- dadosW %>%
   na.omit()
 
 modMatchAberturaNovo <- matchit(AberturaNovo ~ id_real + sexoT + racaT + maeMedioCompleto,
-                                method = "nearest", discard = 'both', data = AberturaNovoSemMissing)
+                                method = "cem", discard = 'both', data = AberturaNovoSemMissing)
 
 matchedAberturaNovo <- match.data(modMatchAberturaNovo)
 
