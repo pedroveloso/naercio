@@ -9,7 +9,7 @@ library(kSamples)
 
 dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
-dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1:p3, p501,c(p12:p13),c(ProfComb:se4_n)))
+dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1:p4, p501,c(p12:p13),c(ProfComb:se4_n)))
 
 dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
   mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
@@ -18,6 +18,7 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
   mutate(Autoconceito = ifelse(se_thet > median(se_thet), 1, 0)) %>% 
   mutate(sexoT = ifelse(sexo == 1, 1, 0)) %>% 
   mutate(racaT = ifelse(raca == 1, 1, 0)) %>%
+  mutate(idadeConclusao = p4) %>%
   mutate(paiMedioCompleto = ifelse(p12 <= 5, 0, ifelse(p12 != 9 | p12 != 99, 1, 0))) %>% 
   mutate(naoTevePai = ifelse(p12 == 9, 1, 0)) %>%
   mutate(naoRespPai = ifelse(p12 == 99, 1, 0)) %>% 
@@ -30,6 +31,7 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
   mutate(aindaEstuda = ifelse(p3 == 1, 1, 0)) %>% 
   filter(p1 <= 5 & p1 >= 2) %>% 
   filter(p501 != 2) %>% 
+  filter(p3 == 2) %>% 
   mutate(idade1serie = ifelse(p1 == 1, 0, p2)) %>% 
   filter(id_real > 18)
 
@@ -41,7 +43,7 @@ dadosW <- dadosT %>% mutate(c4_n = as.character(c4_n)) %>%
   mutate(Autogestao = ifelse(c4_n == 'highly', 1, 0))
 
 
-vars_paream <- c('id_real', 'sexoT', 'racaT', 'maeMedioCompleto')
+vars_paream <- c('id_real', 'sexoT', 'racaT','idadeConclusao', 'maeMedioCompleto')
 
 #Comparacao sem pareamento para HSEs
 
@@ -77,7 +79,7 @@ listaTestsAutogestao <- lapply(vars_paream, function(v){
 
 # Propensity Score para Autogestao
 
-AutogestaoPSModel <- glm(Autogestao ~ id_real + idade1serie+ sexoT + racaT +
+AutogestaoPSModel <- glm(Autogestao ~ id_real + idadeConclusao + sexoT + racaT +
                            maeMedioCompleto,
                          family = binomial(), data = dadosW)
 summary(AutogestaoPSModel)
@@ -99,7 +101,7 @@ AutogestaoSemMissing <- dadosW %>%
   select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoFundCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
-modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
+modMatchAutogestao <- matchit(Autogestao ~ id_real + idadeConclusao + sexoT + racaT + maeMedioCompleto,
                               method = "nearest", discard = "both", data = AutogestaoSemMissing)
 
 matchedAutogestao <- match.data(modMatchAutogestao)
@@ -202,7 +204,7 @@ listaTestsAberturaNovo <- lapply(vars_paream, function(v){
 })
 
 # Propensity Score para AberturaNovo
-AberturaNovoPSModel <- glm(AberturaNovo ~ id_real + idade1serie + sexoT + racaT +
+AberturaNovoPSModel <- glm(AberturaNovo ~ id_real + idadeConclusao + sexoT + racaT +
                              maeMedioCompleto,
                            family = binomial(), data = dadosW)
 summary(AberturaNovoPSModel)
@@ -225,7 +227,7 @@ AberturaNovoSemMissing <- dadosW %>%
   select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoFundCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
-modMatchAberturaNovo <- matchit(AberturaNovo ~ id_real + sexoT + racaT + maeMedioCompleto,
+modMatchAberturaNovo <- matchit(AberturaNovo ~ id_real + idadeConclusao + sexoT + racaT + maeMedioCompleto,
                                 method = "nearest", discard = 'both', data = AberturaNovoSemMissing)
 
 matchedAberturaNovo <- match.data(modMatchAberturaNovo)
