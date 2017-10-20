@@ -9,7 +9,7 @@ library(kSamples)
 
 dados <- read.csv(file.choose(), sep=";", na.strings = ".")
 
-dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1:p3, p502,c(p12:p13),c(ProfComb:se4_n)))
+dadosT <- dados %>% select(.,c(quest,sexo,raca,id_real,EST,p1:p3, p501,c(p12:p13),c(ProfComb:se4_n)))
 
 dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>% 
   mutate(profic = ifelse(ProfComb > 137, 1, 0)) %>% 
@@ -25,11 +25,11 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
   mutate(naoTeveMae = ifelse(p13 == 9, 1, 0)) %>%
   mutate(naoRespMae = ifelse(p13 == 99, 1, 0)) %>%
   mutate(centroSul = ifelse(EST >= 31, 1, 0)) %>% 
-  mutate(ensinoFundCompleto = ifelse(p1 >= 1 & p1 <= 8, 0, 1)) %>% 
+  mutate(ensinoFundCompleto = ifelse(p1 >= 1 & p1 <= 4, 0, 1)) %>% 
   mutate(ensinoMedioCompleto = ifelse(p1 >= 1 & p1 <= 11, 0, 1 )) %>% 
   mutate(aindaEstuda = ifelse(p3 == 1, 1, 0)) %>% 
-  filter(p1 <= 12 & p1 >= 9) %>% 
-  filter(p502 != 2) %>% 
+  filter(p1 <= 5 & p1 >= 2) %>% 
+  filter(p501 != 2) %>% 
   mutate(idade1serie = ifelse(p1 == 1, 0, p2)) %>% 
   filter(id_real > 18)
 
@@ -96,7 +96,7 @@ AutogestaoPredicted %>% mutate(Autogestao = ifelse(Autogestao == 1, rotulos[1], 
 
 # Matching para Autogestao
 AutogestaoSemMissing <- dadosW %>% 
-  select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
+  select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoFundCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
 modMatchAutogestao <- matchit(Autogestao ~ id_real + sexoT + racaT + maeMedioCompleto,
@@ -152,13 +152,13 @@ testeParAutogestao <- lapply(vars_paream,function(v){
   return(teste)
 })
 
-write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_Autogestao_EM.csv'))
+write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/MatchingSummary_Autogestao_EF_I.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
-didAutogestao <- lm(ProfComb ~ Autogestao + ensinoMedioCompleto + Autogestao*ensinoMedioCompleto, 
+didAutogestao <- lm(ProfComb ~ Autogestao + ensinoFundCompleto + Autogestao*ensinoFundCompleto, 
                     data = matchedAutogestao)
-write.csv(tidy(didAutogestao), file = paste0(getwd(), '/results/Autogestao_EM.csv'))
+write.csv(tidy(didAutogestao), file = paste0(getwd(), '/Autogestao_EF_I.csv'))
 
 ############### --------------------> ABERTURA AO NOVO <------------------- ###############
 
@@ -222,7 +222,7 @@ AberturaNovoPredicted %>% mutate(AberturaNovo = ifelse(AberturaNovo == 1, rotulo
 
 # Matching para AberturaNovo
 AberturaNovoSemMissing <- dadosW %>% 
-  select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoMedioCompleto, one_of(vars_paream)) %>% 
+  select(ProfComb, Autogestao, AberturaNovo, Autoconceito, ensinoFundCompleto, one_of(vars_paream)) %>% 
   na.omit()
 
 modMatchAberturaNovo <- matchit(AberturaNovo ~ id_real + sexoT + racaT + maeMedioCompleto,
@@ -277,10 +277,10 @@ testeParAberturaNovo <- lapply(vars_paream,function(v){
   return(teste)
 })
 
-write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_AberturaNovo_EM.csv'))
+write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/MatchingSummary_AberturaNovo_EF_I.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
-didAberturaNovo <- lm(ProfComb ~ AberturaNovo + ensinoMedioCompleto + AberturaNovo*ensinoMedioCompleto, 
+didAberturaNovo <- lm(ProfComb ~ AberturaNovo + ensinoFundCompleto + AberturaNovo*ensinoFundCompleto, 
                       data = matchedAberturaNovo)
-write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/results/Openess_EM.csv'))
+write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/Openess_EF_I.csv'))

@@ -28,7 +28,7 @@ dadosT <- dados %>% mutate(alfab = ifelse(ProfComb <= 95, 0, 1)) %>%
   mutate(ensinoFundCompleto = ifelse(p1 >= 1 & p1 <= 8, 0, 1)) %>% 
   mutate(ensinoMedioCompleto = ifelse(p1 >= 1 & p1 <= 11, 0, 1 )) %>% 
   mutate(aindaEstuda = ifelse(p3 == 1, 1, 0)) %>% 
-  filter(p1 <= 12 & p1 >= 9) %>% 
+  filter(p1 <= 12) %>% 
   filter(p502 != 2) %>% 
   mutate(idade1serie = ifelse(p1 == 1, 0, p2)) %>% 
   filter(id_real > 18)
@@ -152,13 +152,13 @@ testeParAutogestao <- lapply(vars_paream,function(v){
   return(teste)
 })
 
-write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_Autogestao_EM.csv'))
+write.csv(AutogestaoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_Autogestao_Full.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
 didAutogestao <- lm(ProfComb ~ Autogestao + ensinoMedioCompleto + Autogestao*ensinoMedioCompleto, 
                     data = matchedAutogestao)
-write.csv(tidy(didAutogestao), file = paste0(getwd(), '/results/Autogestao_EM.csv'))
+write.csv(tidy(didAutogestao), file = paste0(getwd(), '/results/Autogestao_Full.csv'))
 
 ############### --------------------> ABERTURA AO NOVO <------------------- ###############
 
@@ -277,10 +277,10 @@ testeParAberturaNovo <- lapply(vars_paream,function(v){
   return(teste)
 })
 
-write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_AberturaNovo_EM.csv'))
+write.csv(AberturaNovoMatchResult, file = paste0(getwd(), '/results/MatchingSummary_AberturaNovo_Full.csv'))
 
 #Estimando os efeitos para HSE e salvando os resultados
 
 didAberturaNovo <- lm(ProfComb ~ AberturaNovo + ensinoMedioCompleto + AberturaNovo*ensinoMedioCompleto, 
                       data = matchedAberturaNovo)
-write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/results/Openess_EM.csv'))
+write.csv(tidy(didAberturaNovo), file = paste0(getwd(), '/results/Openess_Full.csv'))
