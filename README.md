@@ -1,6 +1,6 @@
 # noncognitiveskills
 
-## Non cognitive skills effects on functional illiteracy - the Brazil case
+## Non cognitive skills effects on functional illiteracy - the Brazilian case
 
 Repository to the scripts used to prepare data and derive the results for my term paper
 
